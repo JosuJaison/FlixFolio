@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FlixFolio</title>
+    <!-- Google Fonts: Poppins -->
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Poppins', Arial, sans-serif;
+            background: #111;
+            color: #fff;
+            text-align: center;
+            margin: 0;
+            padding: 0;
+        }
+
+        .container {
+            margin-top: 100px;
+        }
+
+        img.logo {
+            width: 250px;
+            margin-bottom: 10px;
+        }
+
+        h1,
+        h2,
+        h3 {
+            font-family: 'Poppins', sans-serif;
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            color: #ffcc00;
+        }
+
+        h2 {
+            margin-top: 40px;
+            color: #ffcc00;
+        }
+
+        /* --- Search Input --- */
+        input {
+            padding: 12px 20px;
+            width: 250px;
+            border: 2px solid #FFD700;
+            border-radius: 25px;
+            outline: none;
+            transition: all 0.3s ease;
+        }
+
+        input:focus {
+            box-shadow: 0 0 10px rgba(255, 215, 0, 0.7);
+        }
+
+        /* --- Country Select --- */
+        select {
+            padding: 12px 15px;
+            margin-left: 10px;
+            border: 2px solid #FFD700;
+            border-radius: 20px;
+            outline: none;
+            transition: all 0.3s ease;
+        }
+
+        select:hover {
+            transform: translateY(-3px);
+        }
+
+        /* --- Button --- */
+        button {
+            padding: 12px 20px;
+            margin-left: 10px;
+            border-radius: 20px;
+            border: 2px solid #FFD700;
+            background-color: #FFD700;
+            color: black;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        button:hover {
+            transform: translateY(-3px);
+            background-color: #FFC300;
+        }
+
+        /* --- Results + Trending cards --- */
+        .movie-card {
+            margin: 15px;
+            padding: 10px;
+            border: 2px solid #FFD700;
+            border-radius: 12px;
+            background: #1a1a1a;
+            transition: all 0.3s ease;
+        }
+
+        .movie-card:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.4);
+        }
+
+        .movie-card img {
+            width: 120px;
+            border-radius: 8px;
+            margin-bottom: 8px;
+        }
+
+        /* trending section grid */
+        #trending {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 15px;
+            margin: 20px auto;
+            max-width: 1000px;
+        }
+
+        #results {
+            margin-top: 30px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <img src="flixfolio-logo.png.png" alt="FlixFolio Logo" class="logo">
+        <p>Find where your movie is streaming!</p>
+
+        <!-- Search form -->
+        <form id="searchForm">
+            <input type="text" id="movieInput" placeholder="Enter movie name..." required>
+            <select id="countrySelect">
+                <option value="US">🇺🇸 US</option>
+                <option value="IN" selected>🇮🇳 India</option>
+                <option value="GB">🇬🇧 UK</option>
+                <option value="CA">🇨🇦 Canada</option>
+                <option value="AU">🇦🇺 Australia</option>
+            </select>
+            <button type="submit">Search</button>
+        </form>
+
+        <!-- Results will appear here -->
+        <div id="results"></div>
+    </div>
+
+    <!-- Trending movies -->
+    <h2>🔥 Trending This Week</h2>
+    <div id="trending"></div>
+
+    <script>
+        // Search handler
+        document.getElementById("searchForm").addEventListener("submit", async function (event) {
+            event.preventDefault();
+
+            const movie = document.getElementById("movieInput").value;
+            const country = document.getElementById("countrySelect").value;
+            const resultsDiv = document.getElementById("results");
+
+            resultsDiv.innerHTML = `<p>🔍 Searching for "${movie}" in ${country}...</p>`;
+
+            try {
+                const response = await fetch(`/search?q=${encodeURIComponent(movie)}&country=${country}`);
+                const data = await response.json();
+
+                if (data.error || data.length === 0) {
+                    resultsDiv.innerHTML = `<p>No results found for "${movie}".</p>`;
+                    return;
+                }
+
+                let html = `<h3>Results for: ${movie} (${country})</h3>`;
+                data.forEach(m => {
+                    html += `
+            <div class="movie-card">
+              ${m.poster ? `<img src="${m.poster}" alt="${m.title}"><br>` : ""}
+              <strong>${m.title}</strong> (${m.year || "N/A"})<br>
+              ${m.providers.length > 0 ? `Available on: ${m.providers.join(", ")}` : "Not available on major streaming platforms"}<br>
+              ${m.link ? `<a href="${m.link}" target="_blank" style="color:#ffcc00;">Watch Here</a>` : ""}
+            </div>
+          `;
+                });
+
+                resultsDiv.innerHTML = html;
+
+            } catch (error) {
+                resultsDiv.innerHTML = `<p>Error fetching results. Try again later.</p>`;
+                console.error(error);
+            }
+        });
+
+        // Trending function
+        async function loadTrending() {
+            const trendingDiv = document.getElementById("trending");
+            const country = document.getElementById("countrySelect").value;
+
+            trendingDiv.innerHTML = `<p>Loading trending movies...</p>`;
+
+            try {
+                const response = await fetch(`/trending?country=${country}`);
+                const data = await response.json();
+
+                if (!data || data.length === 0) {
+                    trendingDiv.innerHTML = `<p>No trending movies found.</p>`;
+                    return;
+                }
+
+                let html = '';
+                data.forEach(m => {
+                    html += `
+            <div class="movie-card" style="width:150px;">
+              ${m.poster ? `<img src="${m.poster}" alt="${m.title}" style="width:100%;"><br>` : ""}
+              <strong>${m.title}</strong> (${m.year || "N/A"})<br>
+              ${m.providers.length > 0 ? `Available on: ${m.providers.join(", ")}` : "Not available on major streaming platforms"}<br>
+              ${m.link ? `<a href="${m.link}" target="_blank" style="color:#ffcc00;">Watch Here</a>` : ""}
+            </div>
+          `;
+                });
+
+                trendingDiv.innerHTML = html;
+
+            } catch (error) {
+                trendingDiv.innerHTML = `<p>Error loading trending movies.</p>`;
+                console.error(error);
+            }
+        }
+
+        // Load trending on page load
+        window.addEventListener("load", loadTrending);
+
+        // Reload trending when country changes
+        document.getElementById("countrySelect").addEventListener("change", loadTrending);
+    </script>
+</body>
+
+</html>'''''
