@@ -1,13 +1,4 @@
-This file lists the Python libraries needed by app.py
-The deployment server (Render) reads this file to install the required packages.
-1. The core web framework
-Flask==2.3.3
-
-2. Used for making HTTP requests (e.g., to the TMDb API)
-requests==2.31.0
-
-3. Used for handling cross-origin requests from your frontend
+Flask==2.3.2
 Flask-Cors==4.0.0
-
-4. The production-ready server that Render uses to run the Flask app
+requests==2.31.0
 gunicorn==21.2.0
